@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <cctype>
 
 using namespace std;
 
@@ -44,7 +45,7 @@ string numToRom(int num)
         // checks to see what range num is in
         // when it finds the correct range it will 
         // then add the roman numeral to romNum 
-        // and subtract the roman numeral's numbered 
+        // and subtract the roman numeral's number 
         // equivalent from num
         if (num >= M)
         {
@@ -186,14 +187,47 @@ int romToNum(string rom)
 
 int main()
 {
-	int decNum;
+	// stores either roman numeral or number
+	string input;
 	
-	cout << "Enter number: ";
-	cin >> decNum;
+	cout << "Roman Numeral Converter From 1-3999" << endl;
+	cout << "Enter roman numeral or number: ";
+	cin >> input;
 	
-	string romNum = numToRom(decNum);
-	cout << "Roman numeral of " << decNum << " is " << romNum << endl;
-	cout << "Decimal numeral of " << romNum << " is " << romToNum(romNum);
+	// stays true if input is a number else turns false
+	bool validNum = true;
+	
+	// checks to see if input is a roman numeral or number
+	// by checking if each character in input is a digit
+	int i = 0;
+	while (i < input.length() && validNum == true)
+	{
+		if (isdigit(input[i]) == false)
+		{
+			validNum = false;
+		}
+		
+		i++;
+	}
+	
+	// input is a number
+	if (validNum == true)
+	{
+		cout << input << " is a number" << endl;
+		
+		// convert input into int
+		int num;
+		num = stoi(input);
+		// display the number's roman numeral value
+		cout << num << " = " << numToRom(num);
+	}
+	// input is a string
+	else
+	{
+		cout << input << " is a roman numeral" << endl;
+		// display the roman numeral's number value
+		cout << input << " = " <<  romToNum(input);
+	}
 	
 	return 0;
 }
