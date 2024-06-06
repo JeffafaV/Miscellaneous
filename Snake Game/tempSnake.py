@@ -19,38 +19,53 @@ class Snake():
 
     def reset(self, bounds):
         default_pos = (bounds[0]-300, bounds[1]-200)
+        snake_head = pygame.Rect(default_pos, self.body_part_dims)
         # instead of a queue of positions we can have a queue of rects which also hold positions
-        self.snake_body = deque([default_pos])
+        self.snake_body = deque([snake_head])
         self.current_dir = Direction.RIGHT
     
     def draw(self, game_window):
-        for body_part_pos in self.snake_body:
-            pygame.draw.rect(game_window, self.color, (body_part_pos, self.body_part_dims))
+        for body_part in self.snake_body:
+            pygame.draw.rect(game_window, self.color, body_part)
     
     def steer(self, keys):
         # uncomment
-        if keys[pygame.K_LEFT] and self.current_dir != Direction.RIGHT and not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_RIGHT]:
+        if (keys[pygame.K_LEFT] and self.current_dir != Direction.RIGHT and 
+                not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_RIGHT]):
             self.current_dir = Direction.LEFT
-        elif keys[pygame.K_RIGHT] and self.current_dir != Direction.LEFT and not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_LEFT]:
+        
+        elif (keys[pygame.K_RIGHT] and self.current_dir != Direction.LEFT and 
+                not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_LEFT]):
             self.current_dir = Direction.RIGHT
-        elif keys[pygame.K_UP] and self.current_dir != Direction.DOWN and not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_DOWN]:
+        
+        elif (keys[pygame.K_UP] and self.current_dir != Direction.DOWN and 
+                not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_DOWN]):
             self.current_dir = Direction.UP
-        elif keys[pygame.K_DOWN] and self.current_dir != Direction.UP and not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_UP]:
+        
+        elif (keys[pygame.K_DOWN] and self.current_dir != Direction.UP and 
+                not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_UP]):
             self.current_dir = Direction.DOWN
 
     
     def move(self, fruit, bounds):
         snake_head = self.snake_body[0]
-        # put elifs
+
+        # we move by appending a new segment of the snake and popping the last segment
+        new_part = None
+
         if self.current_dir == Direction.UP:
-            # we move by appending and popping
-            self.snake_body.appendleft((snake_head[0], snake_head[1]-self.body_part_dims[1]))
+            new_part = (snake_head.left, snake_head.top - self.body_part_dims[1])
+            
         elif self.current_dir == Direction.DOWN:
-            self.snake_body.appendleft((snake_head[0], snake_head[1]+self.body_part_dims[1]))
+            new_part = (snake_head.left, snake_head.top + self.body_part_dims[1])
+            
         elif self.current_dir == Direction.LEFT:
-            self.snake_body.appendleft((snake_head[0]-self.body_part_dims[0], snake_head[1]))
+            new_part = (snake_head.left - self.body_part_dims[0], snake_head.top)
+            
         elif self.current_dir == Direction.RIGHT:
-            self.snake_body.appendleft((snake_head[0]+self.body_part_dims[0], snake_head[1]))
+            new_part = (snake_head.left + self.body_part_dims[0], snake_head.top)
+        
+        self.snake_body.appendleft((pygame.Rect(new_part, self.body_part_dims)))
 
         if not self.collides_with_food(fruit):
             self.snake_body.pop()
@@ -58,21 +73,22 @@ class Snake():
             fruit.spawn(bounds)
     
     def collides_with_food(self, fruit):
-        head = self.snake_body[0]
+        snake_head = self.snake_body[0]
 
         #print(fruit.fruit_pos[0])
 
-        if head[0] == fruit.fruit_pos[0] and head[1] == fruit.fruit_pos[1]:
+        if snake_head.topleft == fruit.fruit_rec.topleft:
             return True
 
         return False
     
     def out_of_bounds(self, bounds):
-        head = self.snake_body[0]
-        
-        if head[0] < 0 or head[0] >= bounds[0]:
+        snake_head = self.snake_body[0]
+        # x
+        if snake_head.left < 0 or snake_head.left >= bounds[0]:
             return True
-        if head[1] < 0 or head[1] >= bounds[1]:
+        # y
+        if snake_head.top < 0 or snake_head.top >= bounds[1]:
             return True
         
         return False
@@ -81,12 +97,12 @@ class Snake():
         if len(self.snake_body) == 1:
             return False
         
-        head = self.snake_body[0]
+        snake_head = self.snake_body[0]
 
         # deque doesn't support slicing and indexing is inefficient so this is a workaround
         body = deque(islice(self.snake_body, 1, len(self.snake_body)))
         for body_part in body:
-            if body_part == head:
+            if body_part.topleft == snake_head.topleft:
                 return True
         
         return False
@@ -98,11 +114,11 @@ class Fruit():
         self.spawn(bounds)
 
     def spawn(self, bounds):
-        self.fruit_pos = (random.randint(0, (bounds[0] // 20)-1) * 20, random.randint(0, (bounds[1] // 20)-1) * 20)
+        fruit_pos = (random.randint(0, (bounds[0] // 20)-1) * 20, random.randint(0, (bounds[1] // 20)-1) * 20)
+        self.fruit_rec = pygame.Rect(fruit_pos, self.fruit_dims)
 
     def draw(self, game_window):
-        pygame.draw.rect(game_window, self.color, (self.fruit_pos, self.fruit_dims))
-
+        pygame.draw.rect(game_window, self.color, self.fruit_rec)
 
 def main_game_loop():
     # window setup
@@ -120,7 +136,7 @@ def main_game_loop():
 
     snake = Snake(bounds)
     fruit = Fruit(bounds)
-    fruit.spawn(bounds)
+    #fruit.spawn(bounds)
 
     # game states
     run = True
@@ -131,7 +147,7 @@ def main_game_loop():
         
         # pause state is true
         while pause:
-            print('Paused')
+            #print('Paused')
             # loops through events (i.e. clicks, keystrokes, etc.)
             for event in pygame.event.get():
                 # check if user exits game window
@@ -150,7 +166,7 @@ def main_game_loop():
         
         # run state is true
         while run:
-            print('Running')
+            #print('Running')
             # loops through events
             for event in pygame.event.get():
                 # check if user exits game window
@@ -165,24 +181,14 @@ def main_game_loop():
                         # changes to pause state
                         pause = True
                         run = False
-                    
-                    # use get press instead
-                    # if event.key == pygame.K_LEFT:
-                    #     snake.steer(Direction.LEFT)
-                    # elif event.key == pygame.K_RIGHT:
-                    #     snake.steer(Direction.RIGHT)
-                    # elif event.key == pygame.K_UP:
-                    #     snake.steer(Direction.UP)
-                    # elif event.key == pygame.K_DOWN:
-                    #     snake.steer(Direction.DOWN)
             
             keys = pygame.key.get_pressed()
             snake.steer(keys)
             
             game_window.fill((0, 0, 0))
             snake.move(fruit, bounds)
-            # if snake.collides_with_food(fruit):
-            #     fruit.spawn(bounds)
+            
+            # might put this in the move function
             if snake.out_of_bounds(bounds) or snake.collides_with_tail():
                 snake.reset(bounds)
             fruit.draw(game_window)
