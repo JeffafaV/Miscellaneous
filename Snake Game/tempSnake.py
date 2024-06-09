@@ -76,8 +76,6 @@ class Snake():
         # get the head of the snake from the queue
         snake_head = self.snake_body[0]
 
-        print(f'x {snake_head.x}')
-        print(f'y {snake_head.y}')
         # instead of shifting every part of the snake by 1 position we can just 
         # add a new segment at the front with the next position and delete the
         # last segment of the snake to mimic the snake moving
@@ -115,6 +113,7 @@ class Snake():
         
         
         if new_part_pos != snake_head.topleft:
+            print(self.current_dir)
             # append new body part to the front of the body queue
             self.snake_body.appendleft((pygame.Rect(new_part_pos, self.body_part_dims)))
             
@@ -168,10 +167,27 @@ class Snake():
         # sets body to the snake body queue excluding the head
         body = deque(islice(self.snake_body, 1, len(self.snake_body)))
 
+        x = 1
+        print(f'{x} {snake_head.topleft}')
+        # BUG where somehow a 3 bodied snake can collide with itself
+        # when pressing different movement keys quickly
+        # I figured out the problem, it has to do with changing directions quickly while the game is at a
+        # frame of no movement. Say you're originally going left but then very quickly you press the down 
+        # key and then after the right key. There's a chance where the down key is pressed at a frame of no
+        # movement which will register the current direction as down. if the current direction is down but 
+        # the snake didn't actually move down, then given the steer conditions, it is okay for the snake to
+        # go right. and since we're originally going left, going right will make it go into itself and 
+        # collide with itself. possible solution is not to set a different direction if there is no movement?
+        # this means I need to edit the steer function and maybe even combine it with the move function to 
+        # check if the calculated new position is the same as the current head position or not
         # loop through entire body
         for body_part in body:
+            x += 1
+            print(f'{x} {body_part.topleft}')
             # check if head and body part are colliding
             if body_part.topleft == snake_head.topleft:
+                pygame.time.delay(1000)
+                sys.exit()
                 return True
         
         # head isn't colliding with body
@@ -230,7 +246,6 @@ def main_game_loop():
         
         # pause state is true
         while pause:
-            #print('Paused')
             # loops through events (i.e. clicks, keystrokes, etc.)
             for event in pygame.event.get():
                 # check if user exits game window
@@ -252,7 +267,7 @@ def main_game_loop():
             curr_time = time.time()
             delta_time = curr_time - prev_time
             prev_time = curr_time
-            #print('Running')
+
             # loops through events
             for event in pygame.event.get():
                 # check if user exits game window
@@ -298,6 +313,7 @@ def main_game_loop():
             # be displayed until it reaches this line of code
             pygame.display.update()
 
+            # FIXED
             # a note on this line of code and programming movement. this is the fps 
             # of the game and the lower I set it, the slower the snake becomes. I find 
             # that I have to lower the fps because if I don't then the snake is too 
