@@ -33,6 +33,7 @@ class Snake():
         self.snake_body = deque([snake_head])
         # sets default direction to the right
         self.current_dir = Direction.RIGHT
+        self.user_dirs = deque([])
     
     # displays snake to the game window
     def draw(self, game_window):
@@ -50,26 +51,95 @@ class Snake():
         # and snake isn't moving to the right
         if (keys[pygame.K_LEFT] and self.current_dir != Direction.RIGHT and 
         not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_RIGHT]):
-            self.current_dir = Direction.LEFT
+            
+            if (len(self.user_dirs) == 0):
+                self.user_dirs.appendleft(Direction.LEFT)
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.LEFT:
+                self.user_dirs.appendleft(Direction.LEFT)
         
         # change snake direction to the right only if the right key is pressed
         # and snake isn't moving to the left
         elif (keys[pygame.K_RIGHT] and self.current_dir != Direction.LEFT and 
         not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_LEFT]):
-            self.current_dir = Direction.RIGHT
+            
+            if (len(self.user_dirs) == 0):
+                self.user_dirs.appendleft(Direction.RIGHT)
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.RIGHT:
+                self.user_dirs.appendleft(Direction.RIGHT)
         
         # change snake direction to up only if the up key is pressed
         # and snake isn't moving down
         elif (keys[pygame.K_UP] and self.current_dir != Direction.DOWN and 
         not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_DOWN]):
-            self.current_dir = Direction.UP
+            
+            if (len(self.user_dirs) == 0):
+                self.user_dirs.appendleft(Direction.UP)
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.UP:
+                self.user_dirs.appendleft(Direction.UP)
         
         # change snake direction to down only if the down key is pressed
         # and snake isn't moving up
         elif (keys[pygame.K_DOWN] and self.current_dir != Direction.UP and 
         not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_UP]):
-            self.current_dir = Direction.DOWN
+            
+            if (len(self.user_dirs) == 0):
+                self.user_dirs.appendleft(Direction.DOWN)
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.DOWN:
+                self.user_dirs.appendleft(Direction.DOWN)
 
+    # turns the snake within the game window
+    def turn(self, fruit, bounds, delta_time, calibrated_fps):
+        # get the head of the snake from the queue
+        snake_head = self.snake_body[0]
+        user_dir = self.user_dirs[-1]
+
+        # instead of shifting every part of the snake by 1 position we can just 
+        # add a new segment at the front with the next position and delete the
+        # last segment of the snake to mimic the snake moving
+        
+        # create a tuple to store the new body part's position
+        new_part_pos = ()
+
+        if user_dir == Direction.UP:
+            self.head_y = self.head_y - self.velocity * delta_time * calibrated_fps
+            rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
+            
+            new_part_pos = (snake_head.x, rounded_y)
+            
+        elif user_dir == Direction.DOWN:
+            self.head_y = self.head_y + self.velocity * delta_time * calibrated_fps
+            rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
+            
+            new_part_pos = (snake_head.x, rounded_y)
+            
+        elif user_dir == Direction.LEFT:
+            self.head_x = self.head_x - self.velocity * delta_time * calibrated_fps
+            rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
+            
+            new_part_pos = (rounded_x, snake_head.y)
+            
+        elif user_dir == Direction.RIGHT:
+            self.head_x = self.head_x + self.velocity * delta_time * calibrated_fps
+            rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
+            
+            new_part_pos = (rounded_x, snake_head.y)
+        
+        print(self.current_dir)
+        if new_part_pos != snake_head.topleft:
+            print(self.user_dirs)
+            self.current_dir = self.user_dirs.pop()
+            # append new body part to the front of the body queue
+            self.snake_body.appendleft(pygame.Rect(new_part_pos, self.body_part_dims))
+            
+            # after moving check if the head of snake is not touching food
+            if not self.collides_with_food(fruit):
+                # since there is no food, we pop the last segment of the snake
+                self.snake_body.pop()
+            else:
+                # note we don't pop here since the snake should grow by 1 part from eating
+                # eat fruit and spawn new fruit
+                fruit.spawn(bounds)
+    
     
     # moves the snake within the game window
     def move(self, fruit, bounds, delta_time, calibrated_fps):
@@ -86,36 +156,32 @@ class Snake():
         if self.current_dir == Direction.UP:
             self.head_y = self.head_y - self.velocity * delta_time * calibrated_fps
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
-            # set position to be up 1 position from current head
-            #new_part_pos = (snake_head.left, snake_head.top - self.velocity)
+            
             new_part_pos = (snake_head.x, rounded_y)
             
         elif self.current_dir == Direction.DOWN:
             self.head_y = self.head_y + self.velocity * delta_time * calibrated_fps
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
-            # set position to be down 1 position from current head
-            #new_part_pos = (snake_head.left, snake_head.top + self.velocity)
+            
             new_part_pos = (snake_head.x, rounded_y)
             
         elif self.current_dir == Direction.LEFT:
             self.head_x = self.head_x - self.velocity * delta_time * calibrated_fps
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
-            # set position to be left 1 position from current head
-            #new_part_pos = (snake_head.left - self.velocity, snake_head.top)
+            
             new_part_pos = (rounded_x, snake_head.y)
             
         elif self.current_dir == Direction.RIGHT:
             self.head_x = self.head_x + self.velocity * delta_time * calibrated_fps
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
-            # set position to be right 1 position from current head
-            #new_part_pos = (snake_head.left + self.velocity, snake_head.top)
+            
             new_part_pos = (rounded_x, snake_head.y)
         
-        
+        print(self.current_dir)
         if new_part_pos != snake_head.topleft:
-            print(self.current_dir)
+            
             # append new body part to the front of the body queue
-            self.snake_body.appendleft((pygame.Rect(new_part_pos, self.body_part_dims)))
+            self.snake_body.appendleft(pygame.Rect(new_part_pos, self.body_part_dims))
             
             # after moving check if the head of snake is not touching food
             if not self.collides_with_food(fruit):
@@ -169,17 +235,7 @@ class Snake():
 
         x = 1
         print(f'{x} {snake_head.topleft}')
-        # BUG where somehow a 3 bodied snake can collide with itself
-        # when pressing different movement keys quickly
-        # I figured out the problem, it has to do with changing directions quickly while the game is at a
-        # frame of no movement. Say you're originally going left but then very quickly you press the down 
-        # key and then after the right key. There's a chance where the down key is pressed at a frame of no
-        # movement which will register the current direction as down. if the current direction is down but 
-        # the snake didn't actually move down, then given the steer conditions, it is okay for the snake to
-        # go right. and since we're originally going left, going right will make it go into itself and 
-        # collide with itself. possible solution is not to set a different direction if there is no movement?
-        # this means I need to edit the steer function and maybe even combine it with the move function to 
-        # check if the calculated new position is the same as the current head position or not
+        
         # loop through entire body
         for body_part in body:
             x += 1
@@ -285,6 +341,7 @@ def main_game_loop():
             
             # contains a collection of all keys pressed and not pressed as booleans
             keys = pygame.key.get_pressed()
+            
             # update direction of snake based on key press
             snake.steer(keys)
 
@@ -293,11 +350,13 @@ def main_game_loop():
             # on the game window when we draw for the current frame
             game_window.fill((0, 0, 0))
             
-            # moves the snake
-            snake.move(fruit, bounds, delta_time, calibrated_fps)
+            if len(snake.user_dirs) > 0:
+                snake.turn(fruit, bounds, delta_time, calibrated_fps)
+            else:
+                # moves the snake
+                snake.move(fruit, bounds, delta_time, calibrated_fps)
             
             # checks if the snake is out of bounds or colliding with itself
-            # note I can probably put this in the move function
             if snake.out_of_bounds(bounds) or snake.collides_with_tail():
                 # reset snake to its default position and size
                 snake.reset(bounds)
