@@ -19,10 +19,12 @@ class Snake():
         self.color = (0, 0, 255) # snake color
         self.body_part_dims = (20, 20) # snake width(x) and height(y)
         self.reset(bounds) # resets snake to its default
-        self.velocity = 20 # move 1 tile or 20 pixels per second (240 pixels per second)
+        # move 20 pixels (1 tile) per frame for 12 frames (240 pixels per second)
+        self.velocity = 20
 
     # resets snake to a default position, size, and direction
     def reset(self, bounds):
+        # x and y variables for precise location of snake head
         self.head_x = bounds[0] - 300
         self.head_y = bounds[1] - 200
         # default position of snake within bounds of game window
@@ -46,78 +48,113 @@ class Snake():
     def steer(self, keys):
         # the steering logic would act strange if multiple movement keys are pressed
         # at once so I disabled steering unless one movement key is pressed at a time
+        # note: to avoid all of these nested if statements and improve the logic I think 
+        # it would be better to have conditions for when the user_dirs queue is empty or not
+        # i.e. one big if statement for when the queue is empty and the else for when its not
+
+        # user input is inserted in a queue since input is frame dependant. since movement is 
+        # time dependant and each frame doesn't move the snake to a new position, I found that the 
+        # user input had to be put in a queue to be processed so that the movement can catch up 
+        # and go through those inputs correctly without bugging out the snake (the biggest problem
+        # I had was that the snake would just go into itself since the user can input multiple 
+        # frames of input before the snake actually moves to a new position)
         
-        # change snake direction to the left only if the left key is pressed
-        # and snake isn't moving to the right
+        # change snake direction to the left only if the left 
+        # key is pressed and snake isn't moving to the right
         if (keys[pygame.K_LEFT] and self.current_dir != Direction.RIGHT and 
         not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_RIGHT]):
             
+            # user input queue is empty
             if (len(self.user_dirs) == 0):
                 self.user_dirs.appendleft(Direction.LEFT)
-            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.LEFT:
+
+            # we can't insert a direction to the queue if the last item added is the
+            # same direction (redundant) or opposite (snake can't go into itself)
+            # user input queue is not empty and last item added doesn't equal left or right
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.LEFT and self.user_dirs[0] != Direction.RIGHT:
                 self.user_dirs.appendleft(Direction.LEFT)
         
-        # change snake direction to the right only if the right key is pressed
-        # and snake isn't moving to the left
+        # change snake direction to the right only if the right 
+        # key is pressed and snake isn't moving to the left
         elif (keys[pygame.K_RIGHT] and self.current_dir != Direction.LEFT and 
         not keys[pygame.K_UP] and not keys[pygame.K_DOWN] and not keys[pygame.K_LEFT]):
             
+            # user input queue is empty
             if (len(self.user_dirs) == 0):
                 self.user_dirs.appendleft(Direction.RIGHT)
-            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.RIGHT:
+            # user input queue is not empty and last item added doesn't equal right or left
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.RIGHT and self.user_dirs[0] != Direction.LEFT:
                 self.user_dirs.appendleft(Direction.RIGHT)
         
-        # change snake direction to up only if the up key is pressed
-        # and snake isn't moving down
+        # change snake direction to up only if the up 
+        # key is pressed and snake isn't moving down
         elif (keys[pygame.K_UP] and self.current_dir != Direction.DOWN and 
         not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_DOWN]):
             
+            # user input queue is empty
             if (len(self.user_dirs) == 0):
                 self.user_dirs.appendleft(Direction.UP)
-            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.UP:
+            # user input queue is not empty and last item added doesn't equal up or down
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.UP and self.user_dirs[0] != Direction.DOWN:
                 self.user_dirs.appendleft(Direction.UP)
         
-        # change snake direction to down only if the down key is pressed
-        # and snake isn't moving up
+        # change snake direction to down only if the down 
+        # key is pressed and snake isn't moving up
         elif (keys[pygame.K_DOWN] and self.current_dir != Direction.UP and 
         not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT] and not keys[pygame.K_UP]):
             
+            # user input queue is empty
             if (len(self.user_dirs) == 0):
                 self.user_dirs.appendleft(Direction.DOWN)
-            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.DOWN:
+            # user input queue is not empty and last item added doesn't equal down or up
+            elif len(self.user_dirs) != 0 and self.user_dirs[0] != Direction.DOWN and self.user_dirs[0] != Direction.UP:
                 self.user_dirs.appendleft(Direction.DOWN)
 
+    # comments apply for the turn and move functions
+    # instead of shifting every part of the snake by 1 position we can just 
+    # add a new segment at the front with the next position and delete the
+    # last segment of the snake to mimic the snake moving
+
+    # instead of moving the snake based on frames, we move it based on time
+    # so that no matter what fps the user runs the game on, the snake will 
+    # always move at the same speed. we calculate movement with delta time
+    # which is the time between two frames. the delta time of a game running 
+    # 30 fps is 2x greater than the delta time of a game running 60 fps since
+    # there is more time between the frames. however, since 30 fps is half the 
+    # frames of 60, they end up having the same movement.
+    
     # turns the snake within the game window
     def turn(self, fruit, bounds, delta_time, calibrated_fps):
         # get the head of the snake from the queue
         snake_head = self.snake_body[0]
+        # get the first direction in queue
         user_dir = self.user_dirs[-1]
-
-        # instead of shifting every part of the snake by 1 position we can just 
-        # add a new segment at the front with the next position and delete the
-        # last segment of the snake to mimic the snake moving
         
         # create a tuple to store the new body part's position
         new_part_pos = ()
 
+        # first input direction is up
         if user_dir == Direction.UP:
             self.head_y = self.head_y - self.velocity * delta_time * calibrated_fps
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
             
             new_part_pos = (snake_head.x, rounded_y)
             
+        # first input direction is down
         elif user_dir == Direction.DOWN:
             self.head_y = self.head_y + self.velocity * delta_time * calibrated_fps
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
             
             new_part_pos = (snake_head.x, rounded_y)
             
+        # first input direction is left
         elif user_dir == Direction.LEFT:
             self.head_x = self.head_x - self.velocity * delta_time * calibrated_fps
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
             
             new_part_pos = (rounded_x, snake_head.y)
             
+        # first input direction is right
         elif user_dir == Direction.RIGHT:
             self.head_x = self.head_x + self.velocity * delta_time * calibrated_fps
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
@@ -145,10 +182,6 @@ class Snake():
     def move(self, fruit, bounds, delta_time, calibrated_fps):
         # get the head of the snake from the queue
         snake_head = self.snake_body[0]
-
-        # instead of shifting every part of the snake by 1 position we can just 
-        # add a new segment at the front with the next position and delete the
-        # last segment of the snake to mimic the snake moving
         
         # create a tuple to store the new body part's position
         new_part_pos = ()
@@ -242,8 +275,8 @@ class Snake():
             print(f'{x} {body_part.topleft}')
             # check if head and body part are colliding
             if body_part.topleft == snake_head.topleft:
-                pygame.time.delay(1000)
-                sys.exit()
+                #pygame.time.delay(1000)
+                #sys.exit()
                 return True
         
         # head isn't colliding with body
@@ -287,10 +320,11 @@ def main_game_loop():
     # creates a snake and fruit object
     snake = Snake(bounds)
     fruit = Fruit(bounds)
-    #fruit.spawn(bounds)
 
     prev_time = time.time()
+    # frames per second (number of iterations of main loop per second)
     fps = 60
+    # frames of game for frame dependant movement
     calibrated_fps = 12
 
     # game states
@@ -361,7 +395,7 @@ def main_game_loop():
                 # reset snake to its default position and size
                 snake.reset(bounds)
                 # move the snake
-                snake.move(fruit, bounds, delta_time, calibrated_fps)
+                #snake.move(fruit, bounds, delta_time, calibrated_fps)
             
             # draw the fruit and snake
             fruit.draw(game_window)
