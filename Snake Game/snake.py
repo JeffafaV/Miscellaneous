@@ -135,37 +135,52 @@ class Snake():
 
         # first input direction is up
         if user_dir == Direction.UP:
+            # update the precise y axis position of the snake
             self.head_y = self.head_y - self.velocity * delta_time * calibrated_fps
+            # round y to the nearest tile in the y axis
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
             
+            # set the new part's position with the rounded y position
             new_part_pos = (snake_head.x, rounded_y)
             
         # first input direction is down
         elif user_dir == Direction.DOWN:
+            # update the precise y axis position of the snake
             self.head_y = self.head_y + self.velocity * delta_time * calibrated_fps
+            # round y to the nearest tile in the y axis
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
             
+            # set the new part's position with the rounded y position
             new_part_pos = (snake_head.x, rounded_y)
             
         # first input direction is left
         elif user_dir == Direction.LEFT:
+            # update the precise x axis position of the snake
             self.head_x = self.head_x - self.velocity * delta_time * calibrated_fps
+            # round x to the nearest tile in the x axis
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
             
+            # set the new part's position with the rounded x position
             new_part_pos = (rounded_x, snake_head.y)
             
         # first input direction is right
         elif user_dir == Direction.RIGHT:
+            # update the precise x axis position of the snake
             self.head_x = self.head_x + self.velocity * delta_time * calibrated_fps
+            # round x to the nearest tile in the x axis
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
             
+            # set the new part's position with the rounded x position
             new_part_pos = (rounded_x, snake_head.y)
         
         print(self.current_dir)
+        # check to see if the new part's position is different from the snake head's position
         if new_part_pos != snake_head.topleft:
             print(self.user_dirs)
+            # set the current direction to the first direction in queue and remove from queue
             self.current_dir = self.user_dirs.pop()
             # append new body part to the front of the body queue
+            # the new body part is the new head of the snake
             self.snake_body.appendleft(pygame.Rect(new_part_pos, self.body_part_dims))
             
             # after moving check if the head of snake is not touching food
@@ -186,34 +201,52 @@ class Snake():
         # create a tuple to store the new body part's position
         new_part_pos = ()
 
+        # current direction is up
         if self.current_dir == Direction.UP:
+            # update the precise y axis position of the snake
             self.head_y = self.head_y - self.velocity * delta_time * calibrated_fps
+            # round y to the nearest tile in the y axis
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
             
+            # set the new part's position with the rounded y position
             new_part_pos = (snake_head.x, rounded_y)
             
+        # current direction is down
         elif self.current_dir == Direction.DOWN:
+            # update the precise y axis position of the snake
             self.head_y = self.head_y + self.velocity * delta_time * calibrated_fps
+            # round y to the nearest tile in the y axis
             rounded_y = round(self.head_y / self.body_part_dims[1]) * self.body_part_dims[1]
             
+            # set the new part's position with the rounded y position
             new_part_pos = (snake_head.x, rounded_y)
             
+        # current direction is left
         elif self.current_dir == Direction.LEFT:
+            # update the precise x axis position of the snake
             self.head_x = self.head_x - self.velocity * delta_time * calibrated_fps
+            # round x to the nearest tile in the x axis
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
             
+            # set the new part's position with the rounded x position
             new_part_pos = (rounded_x, snake_head.y)
             
+        # current direction is right
         elif self.current_dir == Direction.RIGHT:
+            # update the precise x axis position of the snake
             self.head_x = self.head_x + self.velocity * delta_time * calibrated_fps
+            # round x to the nearest tile in the x axis
             rounded_x = round(self.head_x / self.body_part_dims[0]) * self.body_part_dims[0]
             
+            # set the new part's position with the rounded x position
             new_part_pos = (rounded_x, snake_head.y)
         
         print(self.current_dir)
+        # check to see if the new part's position is different from the snake head's position
         if new_part_pos != snake_head.topleft:
             
             # append new body part to the front of the body queue
+            # the new body part is the new head of the snake
             self.snake_body.appendleft(pygame.Rect(new_part_pos, self.body_part_dims))
             
             # after moving check if the head of snake is not touching food
@@ -275,8 +308,6 @@ class Snake():
             print(f'{x} {body_part.topleft}')
             # check if head and body part are colliding
             if body_part.topleft == snake_head.topleft:
-                #pygame.time.delay(1000)
-                #sys.exit()
                 return True
         
         # head isn't colliding with body
@@ -321,6 +352,8 @@ def main_game_loop():
     snake = Snake(bounds)
     fruit = Fruit(bounds)
 
+    # stores the time of when the previous frame was called
+    # for the first iteration it is a less up-to-date time of the current frame
     prev_time = time.time()
     # frames per second (number of iterations of main loop per second)
     fps = 60
@@ -354,8 +387,12 @@ def main_game_loop():
         
         # run state is true
         while run:
+            # stores the time of when the current frame was called
             curr_time = time.time()
+            # get the time between frames by subtracting 
             delta_time = curr_time - prev_time
+            # set pre_time to the current frame's time so that we have 
+            # the previous frame's time for the next frame/iteration
             prev_time = curr_time
 
             # loops through events
@@ -376,7 +413,7 @@ def main_game_loop():
             # contains a collection of all keys pressed and not pressed as booleans
             keys = pygame.key.get_pressed()
             
-            # update direction of snake based on key press
+            # enter valid keystrokes to the user input queue
             snake.steer(keys)
 
             # reset the game window to black
@@ -384,8 +421,11 @@ def main_game_loop():
             # on the game window when we draw for the current frame
             game_window.fill((0, 0, 0))
             
+            # check if the user input queue is not empty
             if len(snake.user_dirs) > 0:
+                # turn the snake
                 snake.turn(fruit, bounds, delta_time, calibrated_fps)
+            # user input queue is empty
             else:
                 # moves the snake
                 snake.move(fruit, bounds, delta_time, calibrated_fps)
@@ -394,8 +434,6 @@ def main_game_loop():
             if snake.out_of_bounds(bounds) or snake.collides_with_tail():
                 # reset snake to its default position and size
                 snake.reset(bounds)
-                # move the snake
-                #snake.move(fruit, bounds, delta_time, calibrated_fps)
             
             # draw the fruit and snake
             fruit.draw(game_window)
@@ -406,14 +444,7 @@ def main_game_loop():
             # be displayed until it reaches this line of code
             pygame.display.update()
 
-            # FIXED
-            # a note on this line of code and programming movement. this is the fps 
-            # of the game and the lower I set it, the slower the snake becomes. I find 
-            # that I have to lower the fps because if I don't then the snake is too 
-            # fast. it is not ideal to set movement speed based on the fps. movement 
-            # should be based on real time, more specifically delta time. delta time 
-            # is the time between two frames or two iterations of the game loop. By 
-            # using delta time the movement will always be the same no matter the fps.
+            # sets the frames per second
             pygame.time.Clock().tick(fps)
 
     # terminates pygame and python
